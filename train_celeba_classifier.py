@@ -139,7 +139,7 @@ def run():
 
     # Prepare checkpoint
     checkpoint = Checkpoint(
-        'celeba_classifier.zip', every_n_epochs=5, use_cpickle=True),
+        'celeba_classifier.zip', every_n_epochs=5, use_cpickle=True)
 
     extensions = [Timing(), FinishAfter(after_n_epochs=50), monitoring,
                   checkpoint, Printing(), ProgressBar()]
