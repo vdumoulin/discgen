@@ -407,8 +407,8 @@ def run(discriminative_regularization=True):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser(
-        description="Train a VAE on the CelebA dataset.")
+        description="Train a VAE on the CelebA dataset")
     parser.add_argument("--regularize", action='store_true',
-                        help="apply discriminative regularization.")
+                        help="apply discriminative regularization")
     args = parser.parse_args()
     run(args.regularize)

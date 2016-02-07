@@ -1,4 +1,5 @@
 """Trains the CelebA classifier."""
+import argparse
 import logging
 
 import numpy
@@ -150,4 +151,7 @@ def run():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    parser = argparse.ArgumentParser(
+        description="Train a classifier on the CelebA dataset")
+    args = parser.parse_args()
     run()
