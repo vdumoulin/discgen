@@ -1,10 +1,14 @@
 """Utility functions."""
+from blocks.bricks import Rectifier
+from blocks.bricks.conv import (ConvolutionalSequence, Convolutional,
+                                AveragePooling)
+from blocks.initialization import Constant
 from fuel.datasets import CelebA
 from fuel.schemes import ShuffledScheme
 from fuel.streams import DataStream
 from matplotlib import cm, pyplot
 from mpl_toolkits.axes_grid1 import ImageGrid
-from six.moves import zip
+from six.moves import zip, cPickle
 
 
 def plot_image_grid(images, num_rows, num_cols, save_path=None):
@@ -85,3 +89,151 @@ def create_celeba_streams(training_batch_size, monitoring_batch_size,
 
     return (main_loop_stream, train_monitor_stream, valid_monitor_stream,
             test_monitor_stream)
+
+
+def load_vgg_classifier():
+    """Loads the VGG19 classifier into a brick.
+
+    Relies on ``vgg19_normalized.pkl`` containing the model
+    parameters.
+
+    Returns
+    -------
+    convnet : :class:`blocks.bricks.conv.ConvolutionalSequence`
+        VGG19 convolutional brick.
+
+    """
+    convnet = ConvolutionalSequence(
+        layers=[
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=64,
+                name='conv1_1'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=64,
+                name='conv1_2'),
+            Rectifier(),
+            AveragePooling(
+                pooling_size=(2, 2),
+                name='pool1'),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=128,
+                name='conv2_1'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=128,
+                name='conv2_2'),
+            Rectifier(),
+            AveragePooling(
+                pooling_size=(2, 2),
+                name='pool2'),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=256,
+                name='conv3_1'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=256,
+                name='conv3_2'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=256,
+                name='conv3_3'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=256,
+                name='conv3_4'),
+            Rectifier(),
+            AveragePooling(
+                pooling_size=(2, 2),
+                name='pool3'),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=512,
+                name='conv4_1'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=512,
+                name='conv4_2'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=512,
+                name='conv4_3'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=512,
+                name='conv4_4'),
+            Rectifier(),
+            AveragePooling(
+                pooling_size=(2, 2),
+                name='pool4'),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=512,
+                name='conv5_1'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=512,
+                name='conv5_2'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=512,
+                name='conv5_3'),
+            Rectifier(),
+            Convolutional(
+                filter_size=(3, 3),
+                border_mode=(1, 1),
+                num_filters=512,
+                name='conv5_4'),
+            Rectifier(),
+            AveragePooling(
+                pooling_size=(2, 2),
+                name='pool5'),
+        ],
+        num_channels=3,
+        image_size=(32, 32),
+        tied_biases=True,
+        weights_init=Constant(0),
+        biases_init=Constant(0),
+        name='convnet')
+    convnet.initialize()
+
+    with open('vgg19_normalized.pkl', 'r') as f:
+        parameter_values = cPickle.load(f)['param values']
+    conv_weights = parameter_values[::2]
+    conv_biases = parameter_values[1::2]
+    conv_indices = [0, 2, 5, 7, 10, 12, 14, 16, 19, 21, 23, 25, 28, 30, 32, 34]
+    conv_layers = [convnet.layers[i] for i in conv_indices]
+    for layer, W_val, b_val in zip(conv_layers, conv_weights, conv_biases):
+        W, b = layer.parameters
+        W.set_value(W_val)
+        b.set_value(b_val)
+
+    return convnet
