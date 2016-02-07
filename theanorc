@@ -1,0 +1,11 @@
+[global]
+device = gpu
+floatX = float32
+mode = FAST_RUN
+
+[dnn.conv]
+algo_fwd = time_once
+algo_bwd_data = time_once
+
+[dnnv]
+algo_bwd_filter = time_once
