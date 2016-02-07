@@ -1,0 +1,19 @@
+"""Downloads the pretrained VGG model."""
+import argparse
+import os
+
+from fuel.downloaders.base import default_downloader
+
+URL = ('https://s3.amazonaws.com/lasagne/recipes/pretrained/imagenet/'
+       'vgg19_normalized.pkl')
+
+
+def main():
+    default_downloader(os.getcwd(), [URL], [None])
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Download the pretrained VGG model")
+    args = parser.parse_args()
+    main()
