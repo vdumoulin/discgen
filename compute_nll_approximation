@@ -29,19 +29,18 @@ def log_sum_exp(A, axis=None):
 
 
 def main(stream_function, saved_model_path, num_samples, save_path):
+    print('Loading saved model...')
     model = Model(load(saved_model_path).algorithm.cost)
     selector = Selector(model.top_bricks)
     encoder_convnet, = selector.select('/encoder_convnet').bricks
     encoder_mlp, = selector.select('/encoder_mlp').bricks
     decoder_mlp, = selector.select('/decoder_mlp').bricks
     decoder_convnet, = selector.select('/decoder_convnet').bricks
-    log_sigma_theta_val, = [p for p in model.parameters
-                            if p.name == 'log_sigma_theta']
-    log_sigma_theta = log_sigma_theta_val.dimshuffle('x', 0, 1, 2)
+    log_sigma_theta, = [p for p in model.parameters
+                        if p.name == 'log_sigma_theta']
+    log_sigma_theta = log_sigma_theta.dimshuffle('x', 0, 1, 2)
 
-    streams = stream_function(100, 500)
-    sgd_stream, train_stream, valid_stream, test_stream = streams
-
+    print('Building computation graph...')
     x = tensor.tensor4('features')
 
     def one_step(x):
@@ -76,9 +75,13 @@ def main(stream_function, saved_model_path, num_samples, save_path):
         fn=one_step, non_sequences=x, n_steps=num_samples)
     sum_nll = -(log_sum_exp(rval, axis=0) - tensor.log(num_samples)).sum()
 
+    print('Compiling NLL approximation function...')
     nll_approximation_function = theano.function([x], sum_nll, updates=updates)
 
-    print('Using {} samples per data point'.format(num_samples))
+    print('Computing approximate NLL (using {} '.format(num_samples) +
+          'samples per data point)...')
+    streams = stream_function(100, 500)
+    sgd_stream, train_stream, valid_stream, test_stream = streams
     for (name, stream) in (('Training', train_stream),
                            ('Validation', valid_stream),
                            ('Test', test_stream)):

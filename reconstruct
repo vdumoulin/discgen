@@ -16,6 +16,7 @@ from utils import (plot_image_grid, create_svhn_streams,
 
 
 def main(stream_function, saved_model_path, nrows, ncols, save_path):
+    print('Loading saved model...')
     model = Model(load(saved_model_path).algorithm.cost)
     selector = Selector(model.top_bricks)
     encoder_convnet, = selector.select('/encoder_convnet').bricks
@@ -23,12 +24,8 @@ def main(stream_function, saved_model_path, nrows, ncols, save_path):
     decoder_mlp, = selector.select('/decoder_mlp').bricks
     decoder_convnet, = selector.select('/decoder_convnet').bricks
 
-    streams = stream_function(100, nrows * ncols)
-    sgd_stream, train_stream, valid_stream, test_stream = streams
-
-    batch, = next(valid_stream.get_epoch_iterator())
-    x = tensor.as_tensor_variable(batch)
-
+    print('Building computation graph...')
+    x = tensor.tensor4('features')
     phi = encoder_mlp.apply(encoder_convnet.apply(x).flatten(ndim=2))
     nlat = encoder_mlp.output_dim // 2
     mu_phi = phi[:, :nlat]
@@ -38,18 +35,23 @@ def main(stream_function, saved_model_path, nrows, ncols, save_path):
     mu_theta = decoder_convnet.apply(
         decoder_mlp.apply(z).reshape(
             (-1,) + decoder_convnet.get_dim('input_')))
-
     computation_graph = ComputationGraph([x, mu_theta])
 
+    print('Compiling reconstruction function...')
     reconstruction_function = theano.function(
         computation_graph.inputs, computation_graph.outputs)
 
-    examples, reconstructions = reconstruction_function()
+    print('Reconstructing...')
+    streams = stream_function(100, nrows * ncols)
+    sgd_stream, train_stream, valid_stream, test_stream = streams
+    examples, reconstructions = reconstruction_function(
+        next(valid_stream.get_epoch_iterator())[0])
+
+    print('Preparing image grid...')
     images = numpy.empty(
         (2 * nrows * ncols,) + examples.shape[1:], dtype=examples.dtype)
     images[::2] = examples
     images[1::2] = reconstructions
-
     plot_image_grid(images, nrows, 2 * ncols, save_path)
 
 

@@ -14,11 +14,13 @@ from utils import plot_image_grid
 
 
 def main(saved_model_path, nrows, ncols, save_path, seed=22349998):
+    print('Loading saved model...')
     model = Model(load(saved_model_path).algorithm.cost)
     selector = Selector(model.top_bricks)
     decoder_mlp, = selector.select('/decoder_mlp').bricks
     decoder_convnet, = selector.select('/decoder_convnet').bricks
 
+    print('Building computation graph...')
     z = Random(seed).theano_rng.normal(size=(nrows * ncols,
                                              decoder_mlp.input_dim),
                                        dtype=theano.config.floatX)
@@ -27,10 +29,15 @@ def main(saved_model_path, nrows, ncols, save_path, seed=22349998):
             (-1,) + decoder_convnet.get_dim('input_')))
     computation_graph = ComputationGraph([mu_theta])
 
+    print('Compiling sampling function...')
     sampling_function = theano.function(
         computation_graph.inputs, computation_graph.outputs[0])
 
-    plot_image_grid(sampling_function(), nrows, ncols, save_path)
+    print('Sampling...')
+    samples = sampling_function()
+
+    print('Preparing image grid...')
+    plot_image_grid(samples, nrows, ncols, save_path)
 
 
 if __name__ == "__main__":

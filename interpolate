@@ -15,46 +15,51 @@ from utils import (plot_image_grid, create_svhn_streams,
 
 
 def main(stream_function, saved_model_path, num_pairs, num_steps, save_path):
+    print('Loading saved model...')
     model = Model(load(saved_model_path).algorithm.cost)
     selector = Selector(model.top_bricks)
     encoder_convnet, = selector.select('/encoder_convnet').bricks
     encoder_mlp, = selector.select('/encoder_mlp').bricks
     decoder_mlp, = selector.select('/decoder_mlp').bricks
     decoder_convnet, = selector.select('/decoder_convnet').bricks
+
+    print('Building inference computation graph...')
     nlat = encoder_mlp.output_dim // 2
+    x = tensor.tensor4('features')
+    phi = encoder_mlp.apply(encoder_convnet.apply(from_x).flatten(ndim=2))
+    mu_phi = phi[:, :nlat]
+    inference_cg = ComputationGraph([mu_phi])
 
-    streams = stream_function(100, num_pairs)
-    sgd_stream, train_stream, valid_stream, test_stream = streams
+    print('Compiling inference function...')
+    inference_function = theano.function(
+        inference_cg.inputs, inference_cg.outputs[0])
 
-    iterator = valid_stream.get_epoch_iterator()
-
-    from_x = tensor.as_tensor_variable(next(iterator)[0])
-    from_phi = encoder_mlp.apply(encoder_convnet.apply(from_x).flatten(ndim=2))
-    from_z = from_phi[:, :nlat]
-
-    to_x = tensor.as_tensor_variable(next(iterator)[0])
-    to_phi = encoder_mlp.apply(encoder_convnet.apply(to_x).flatten(ndim=2))
-    to_z = to_phi[:, :nlat]
-
-    computation_graph = ComputationGraph([from_z, to_z])
-    z_function = theano.function(
-        computation_graph.inputs, computation_graph.outputs)
-
+    print('Building generation computation graph...')
     z = tensor.matrix('z')
     mu_theta = decoder_convnet.apply(
         decoder_mlp.apply(z).reshape(
             (-1,) + decoder_convnet.get_dim('input_')))
-    computation_graph = ComputationGraph([mu_theta])
-    decoding_function = theano.function(
-        computation_graph.inputs, computation_graph.outputs[0])
+    generation_cg = ComputationGraph([mu_theta])
 
-    from_z, to_z = z_function()
+    print('Compiling generation function...')
+    generation_function = theano.function(
+        generation_cg.inputs, generation_cg.outputs[0])
+
+    print('Running inference...')
+    streams = stream_function(100, num_pairs)
+    sgd_stream, train_stream, valid_stream, test_stream = streams
+    iterator = valid_stream.get_epoch_iterator()
+    from_z = inference_function(next(iterator)[0])
+    to_z = inference_function(next(iterator)[0])
+
+    print('Computing interpolations...')
     from_to_tensor = to_z - from_z
     between_x_list = []
     for alpha in numpy.linspace(0, 1, num_steps + 1):
         between_z = from_z + alpha * from_to_tensor
-        between_x_list.append(decoding_function(between_z))
+        between_x_list.append(generation_function(between_z))
 
+    print('Preparing image grid...')
     images = numpy.empty(
         (num_pairs * (num_steps + 1),) + between_x_list[0].shape[1:],
         dtype=between_x_list[0].dtype)
