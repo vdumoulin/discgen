@@ -48,13 +48,45 @@ $ fuel-download celeba 64 --clear
 
 Make sure you're in the repo's root directory.
 
+### Download VGG19
+
+Required for the SVHN and CIFAR10 models.
+
+``` bash
+python download_vgg19.py
+```
+
 ### SVHN
 
-**WRITEME**
+Make sure you downloaded VGG19.
+
+Train a VAE *without* discriminative regularization:
+
+``` bash
+$ THEANORC=theanorc python train_svhn_vae.py
+```
+
+Train a VAE *with* discriminative regularization:
+
+``` bash
+$ THEANORC=theanorc python train_svhn_vae.py --regularize
+```
 
 ### CIFAR-10
 
-**WRITEME**
+Make sure you downloaded VGG19.
+
+Train a VAE *without* discriminative regularization:
+
+``` bash
+$ THEANORC=theanorc python train_cifar10_vae.py
+```
+
+Train a VAE *with* discriminative regularization:
+
+``` bash
+$ THEANORC=theanorc python train_cifar10_vae.py --regularize
+```
 
 ### CelebA
 
