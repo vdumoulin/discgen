@@ -44,9 +44,82 @@ def plot_image_grid(images, num_rows, num_cols, save_path=None):
         pyplot.savefig(save_path, transparent=True, bbox_inches='tight')
 
 
+def create_streams(train_set, valid_set, test_set, training_batch_size,
+                   monitoring_batch_size):
+    """Creates data streams for training and monitoring.
+
+    Parameters
+    ----------
+    train_set : :class:`fuel.datasets.Dataset`
+        Training set.
+    valid_set : :class:`fuel.datasets.Dataset`
+        Validation set.
+    test_set : :class:`fuel.datasets.Dataset`
+        Test set.
+    monitoring_batch_size : int
+        Batch size for monitoring.
+    include_targets : bool
+        If ``True``, use both features and targets. If ``False``, use
+        features only.
+
+    Returns
+    -------
+    rval : tuple of data streams
+        Data streams for the main loop, the training set monitor,
+        the validation set monitor and the test set monitor.
+
+    """
+    main_loop_stream = DataStream.default_stream(
+        dataset=train_set,
+        iteration_scheme=ShuffledScheme(
+            train_set.num_examples, training_batch_size))
+    train_monitor_stream = DataStream.default_stream(
+        dataset=train_set,
+        iteration_scheme=ShuffledScheme(
+            train_set.num_examples, monitoring_batch_size))
+    valid_monitor_stream = DataStream.default_stream(
+        dataset=valid_set,
+        iteration_scheme=ShuffledScheme(
+            valid_set.num_examples, monitoring_batch_size))
+    test_monitor_stream = DataStream.default_stream(
+        dataset=test_set,
+        iteration_scheme=ShuffledScheme(
+            test_set.num_examples, monitoring_batch_size))
+
+    return (main_loop_stream, train_monitor_stream, valid_monitor_stream,
+            test_monitor_stream)
+
+
+def create_svhn_streams(training_batch_size, monitoring_batch_size):
+    """Creates SVHN data streams.
+
+    Parameters
+    ----------
+    training_batch_size : int
+        Batch size for training.
+    monitoring_batch_size : int
+        Batch size for monitoring.
+
+    Returns
+    -------
+    rval : tuple of data streams
+        Data streams for the main loop, the training set monitor,
+        the validation set monitor and the test set monitor.
+
+    """
+    train_set = SVHN(2, ('train',), sources=('features',),
+                     subset=slice(0, 63257))
+    valid_set = SVHN(2, ('train',), sources=('features',),
+                     subset=slice(63257, 73257))
+    test_set = SVHN(2, ('test',), sources=('features',))
+
+    return create_streams(train_set, valid_set, test_set, training_batch_size,
+                          monitoring_batch_size)
+
+
 def create_celeba_streams(training_batch_size, monitoring_batch_size,
                           include_targets):
-    """Creates data streams for training and monitoring.
+    """Creates CelebA data streams.
 
     Parameters
     ----------
@@ -71,25 +144,8 @@ def create_celeba_streams(training_batch_size, monitoring_batch_size,
     valid_set = CelebA('64', ('valid',), sources=sources)
     test_set = CelebA('64', ('test',), sources=sources)
 
-    main_loop_stream = DataStream.default_stream(
-        dataset=train_set,
-        iteration_scheme=ShuffledScheme(
-            train_set.num_examples, training_batch_size))
-    train_monitor_stream = DataStream.default_stream(
-        dataset=train_set,
-        iteration_scheme=ShuffledScheme(
-            train_set.num_examples, monitoring_batch_size))
-    valid_monitor_stream = DataStream.default_stream(
-        dataset=valid_set,
-        iteration_scheme=ShuffledScheme(
-            valid_set.num_examples, monitoring_batch_size))
-    test_monitor_stream = DataStream.default_stream(
-        dataset=test_set,
-        iteration_scheme=ShuffledScheme(
-            test_set.num_examples, monitoring_batch_size))
-
-    return (main_loop_stream, train_monitor_stream, valid_monitor_stream,
-            test_monitor_stream)
+    return create_streams(train_set, valid_set, test_set, training_batch_size,
+                          monitoring_batch_size)
 
 
 def load_vgg_classifier():

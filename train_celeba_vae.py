@@ -387,10 +387,11 @@ def run(discriminative_regularization=True):
             [cost, avg_kl_term, avg_reconstruction_term])
     train_monitoring = DataStreamMonitoring(
         monitored_quantities_list[0], train_monitor_stream, prefix="train",
-        updates=extra_updates, every_n_epochs=5)
+        updates=extra_updates, after_epoch=False, before_first_epoch=False,
+        every_n_epochs=5)
     valid_monitoring = DataStreamMonitoring(
         monitored_quantities_list[1], valid_monitor_stream, prefix="valid",
-        every_n_epochs=5)
+        after_epoch=False, before_first_epoch=False, every_n_epochs=5)
 
     # Prepare checkpoint
     save_path = 'celeba_vae_{}regularization.zip'.format(
