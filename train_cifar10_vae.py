@@ -15,7 +15,7 @@ from blocks.extensions.monitoring import DataStreamMonitoring
 from blocks.extensions.saveload import Checkpoint
 from blocks.filter import VariableFilter
 from blocks.graph import (ComputationGraph, get_batch_normalization_updates,
-                          batch_normalization)
+                          apply_batch_normalization)
 from blocks.initialization import IsotropicGaussian, Constant
 from blocks.main_loop import MainLoop
 from blocks.model import Model
@@ -241,70 +241,59 @@ def create_training_computation_graphs(discriminative_regularization):
             add_role(log_sigma, PARAMETER)
             variance_parameters.append(log_sigma)
 
-    # Computation graph creation is encapsulated within this function in order
-    # to allow selecting which parts of the graph will use batch statistics for
-    # batch normalization and which parts will use population statistics.
-    # Specifically, we'd like to use population statistics for the classifier
-    # even in the training graph.
-    def create_computation_graph():
-        # Encode
-        phi = encoder_mlp.apply(encoder_convnet.apply(x).flatten(ndim=2))
-        nlat = encoder_mlp.output_dim // 2
-        mu_phi = phi[:, :nlat]
-        log_sigma_phi = phi[:, nlat:]
-        # Sample from the approximate posterior
-        epsilon = random_brick.theano_rng.normal(
-            size=mu_phi.shape, dtype=mu_phi.dtype)
-        z = mu_phi + epsilon * tensor.exp(log_sigma_phi)
-        # Decode
-        mu_theta = decoder_convnet.apply(
-            decoder_mlp.apply(z).reshape(
-                (-1,) + decoder_convnet.get_dim('input_')))
-        log_sigma = log_sigma_theta.dimshuffle('x', 0, 1, 2)
+    # Encode
+    phi = encoder_mlp.apply(encoder_convnet.apply(x).flatten(ndim=2))
+    nlat = encoder_mlp.output_dim // 2
+    mu_phi = phi[:, :nlat]
+    log_sigma_phi = phi[:, nlat:]
+    # Sample from the approximate posterior
+    epsilon = random_brick.theano_rng.normal(
+        size=mu_phi.shape, dtype=mu_phi.dtype)
+    z = mu_phi + epsilon * tensor.exp(log_sigma_phi)
+    # Decode
+    mu_theta = decoder_convnet.apply(
+        decoder_mlp.apply(z).reshape(
+            (-1,) + decoder_convnet.get_dim('input_')))
+    log_sigma = log_sigma_theta.dimshuffle('x', 0, 1, 2)
 
-        # Compute KL and reconstruction terms
-        kl_term = 0.5 * (
-            tensor.exp(2 * log_sigma_phi) + mu_phi ** 2 - 2 * log_sigma_phi - 1
-        ).sum(axis=1)
-        reconstruction_term = -0.5 * (
-            tensor.log(2 * pi) + 2 * log_sigma +
-            (x - mu_theta) ** 2 / tensor.exp(2 * log_sigma)
-        ).sum(axis=[1, 2, 3])
-        total_reconstruction_term = reconstruction_term
+    # Compute KL and reconstruction terms
+    kl_term = 0.5 * (
+        tensor.exp(2 * log_sigma_phi) + mu_phi ** 2 - 2 * log_sigma_phi - 1
+    ).sum(axis=1)
+    reconstruction_term = -0.5 * (
+        tensor.log(2 * pi) + 2 * log_sigma +
+        (x - mu_theta) ** 2 / tensor.exp(2 * log_sigma)
+    ).sum(axis=[1, 2, 3])
+    total_reconstruction_term = reconstruction_term
 
-        if discriminative_regularization:
-            # Propagate both the input and the reconstruction through the
-            # classifier
-            acts_cg = ComputationGraph(
-                [classifier_convnet.apply(255 * x[:, ::-1, :, :])])
-            acts_hat_cg = ComputationGraph(
-                [classifier_convnet.apply(255 * mu_theta[:, ::-1, :, :])])
+    if discriminative_regularization:
+        # Propagate both the input and the reconstruction through the
+        # classifier
+        acts_cg = ComputationGraph(
+            [classifier_convnet.apply(255 * x[:, ::-1, :, :])])
+        acts_hat_cg = ComputationGraph(
+            [classifier_convnet.apply(255 * mu_theta[:, ::-1, :, :])])
 
-            # Retrieve activations of interest and compute discriminative
-            # regularization reconstruction terms
-            for i, log_sigma in zip(conv_indices, variance_parameters[1:]):
-                layer = classifier_convnet.layers[i]
-                variable_filter = VariableFilter(roles=[OUTPUT],
-                                                 bricks=[layer])
-                d, = variable_filter(acts_cg)
-                d_hat, = variable_filter(acts_hat_cg)
-                log_sigma = log_sigma.dimshuffle('x', 0, 1, 2)
+        # Retrieve activations of interest and compute discriminative
+        # regularization reconstruction terms
+        for i, log_sigma in zip(conv_indices, variance_parameters[1:]):
+            layer = classifier_convnet.layers[i]
+            variable_filter = VariableFilter(roles=[OUTPUT],
+                                             bricks=[layer])
+            d, = variable_filter(acts_cg)
+            d_hat, = variable_filter(acts_hat_cg)
+            log_sigma = log_sigma.dimshuffle('x', 0, 1, 2)
 
-                total_reconstruction_term += -0.5 * (
-                    tensor.log(2 * pi) + 2 * log_sigma +
-                    (d - d_hat) ** 2 / tensor.exp(2 * log_sigma)
-                ).sum(axis=[1, 2, 3])
+            total_reconstruction_term += -0.5 * (
+                tensor.log(2 * pi) + 2 * log_sigma +
+                (d - d_hat) ** 2 / tensor.exp(2 * log_sigma)
+            ).sum(axis=[1, 2, 3])
 
-        cost = (kl_term - total_reconstruction_term).mean()
+    cost = (kl_term - total_reconstruction_term).mean()
 
-        return ComputationGraph([cost, kl_term, reconstruction_term])
+    cg = ComputationGraph([cost, kl_term, reconstruction_term])
 
-    cg = create_computation_graph()
-    with batch_normalization(encoder_convnet, encoder_mlp,
-                             decoder_convnet, decoder_mlp):
-        bn_cg = create_computation_graph()
-
-    return cg, bn_cg, variance_parameters
+    return cg, apply_batch_normalization(bn_cg), variance_parameters
 
 
 def run(discriminative_regularization=True):
