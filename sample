@@ -1,0 +1,48 @@
+#!/usr/bin/env ipython
+"""Plots model samples."""
+import argparse
+
+import theano
+from blocks.bricks import Random
+from blocks.graph import ComputationGraph
+from blocks.select import Selector
+from blocks.serialization import load
+from theano import tensor
+
+from utils import plot_image_grid
+
+
+def main(saved_model_path, num_samples, save_path, seed=22349998):
+    main_loop = load(saved_model_path)
+    model = main_loop.model
+    selector = Selector(model.top_bricks)
+    decoder_mlp, = selector.select('/decoder_mlp').bricks
+    decoder_convnet, = selector.select('/decoder_convnet').bricks
+
+    z = Random(seed).theano_rng.normal(size=(num_samples,
+                                             decoder_mlp.input_dim),
+                                       dtype=theano.config.floatX)
+    mu_theta = decoder_convnet.apply(
+        decoder_mlp.apply(z).reshape(
+            (-1,) + decoder_convnet.get_dim('input_')))
+    computation_graph = ComputationGraph([mu_theta])
+
+    sampling_function = theano.function(
+        computation_graph.inputs, computation_graph.outputs[0])
+
+    plot_image_grid(sampling_function(), nrows, ncols, save_path)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Plot model samples")
+    parser.add_argument("saved_model_path", type=str,
+                        help="path to the saved model")
+    parser.add_argument("--nrows", type=int, default=10,
+                        help="number of rows of samples to display")
+    parser.add_argument("--ncols", type=int, default=10,
+                        help="number of columns of samples to display")
+    parser.add_argument("--save-path", type=str, default=None,
+                        help="where to save the generated samples")
+    args = parser.parse_args()
+
+    main(args.saved_model_path, args.nrows * args.ncols, args.save_path)
