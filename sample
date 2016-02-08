@@ -13,13 +13,13 @@ from theano import tensor
 from utils import plot_image_grid
 
 
-def main(saved_model_path, num_samples, save_path, seed=22349998):
+def main(saved_model_path, nrows, ncols, save_path, seed=22349998):
     model = Model(load(saved_model_path).algorithm.cost)
     selector = Selector(model.top_bricks)
     decoder_mlp, = selector.select('/decoder_mlp').bricks
     decoder_convnet, = selector.select('/decoder_convnet').bricks
 
-    z = Random(seed).theano_rng.normal(size=(num_samples,
+    z = Random(seed).theano_rng.normal(size=(nrows * ncols,
                                              decoder_mlp.input_dim),
                                        dtype=theano.config.floatX)
     mu_theta = decoder_convnet.apply(
@@ -45,4 +45,4 @@ if __name__ == "__main__":
                         help="where to save the generated samples")
     args = parser.parse_args()
 
-    main(args.saved_model_path, args.nrows * args.ncols, args.save_path)
+    main(args.saved_model_path, args.nrows, args.ncols, args.save_path)
