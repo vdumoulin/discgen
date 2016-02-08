@@ -107,3 +107,31 @@ Train a VAE *with* discriminative regularization:
 ``` bash
 $ THEANORC=theanorc python train_celeba_vae.py --regularize
 ```
+
+## Evaluating the models
+
+### Samples
+
+``` bash
+$ THEANORC=theanorc ./sample [trained_model.zip]
+```
+
+### Reconstructions
+
+``` bash
+$ THEANORC=theanorc ./reconstruct [which_dataset] [trained_model.zip]
+```
+
+### Interpolations
+
+``` bash
+$ THEANORC=theanorc ./interpolate [which_dataset] [trained_model.zip]
+```
+
+### NLL approximation
+
+``` bash
+$ THEANORC=theanorc ./compute_nll_approximation [which_dataset] [trained_model.zip]
+```
+
+*Note: this takes a __long__ time.*
