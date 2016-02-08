@@ -145,7 +145,7 @@ def create_cifar10_streams(training_batch_size, monitoring_batch_size):
 
 
 def create_celeba_streams(training_batch_size, monitoring_batch_size,
-                          include_targets):
+                          include_targets=False):
     """Creates CelebA data streams.
 
     Parameters
