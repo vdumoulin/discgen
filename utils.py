@@ -4,7 +4,7 @@ from blocks.bricks import Rectifier
 from blocks.bricks.conv import (ConvolutionalSequence, Convolutional,
                                 AveragePooling)
 from blocks.initialization import Constant
-from fuel.datasets import CelebA
+from fuel.datasets import SVHN, CIFAR10, CelebA
 from fuel.schemes import ShuffledScheme
 from fuel.streams import DataStream
 from matplotlib import cm, pyplot
@@ -112,6 +112,33 @@ def create_svhn_streams(training_batch_size, monitoring_batch_size):
     valid_set = SVHN(2, ('train',), sources=('features',),
                      subset=slice(63257, 73257))
     test_set = SVHN(2, ('test',), sources=('features',))
+
+    return create_streams(train_set, valid_set, test_set, training_batch_size,
+                          monitoring_batch_size)
+
+
+def create_cifar10_streams(training_batch_size, monitoring_batch_size):
+    """Creates CIFAR10 data streams.
+
+    Parameters
+    ----------
+    training_batch_size : int
+        Batch size for training.
+    monitoring_batch_size : int
+        Batch size for monitoring.
+
+    Returns
+    -------
+    rval : tuple of data streams
+        Data streams for the main loop, the training set monitor,
+        the validation set monitor and the test set monitor.
+
+    """
+    train_set = CIFAR10(('train',), sources=('features',),
+                     subset=slice(0, 45000))
+    valid_set = CIFAR10(('train',), sources=('features',),
+                     subset=slice(45000, 50000))
+    test_set = CIFAR10(('test',), sources=('features',))
 
     return create_streams(train_set, valid_set, test_set, training_batch_size,
                           monitoring_batch_size)
