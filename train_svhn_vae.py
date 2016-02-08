@@ -275,9 +275,10 @@ def create_training_computation_graphs(discriminative_regularization):
         if discriminative_regularization:
             # Propagate both the input and the reconstruction through the
             # classifier
-            acts_cg = ComputationGraph([classifier_convnet.apply(x)])
+            acts_cg = ComputationGraph(
+                [classifier_convnet.apply(255 * x[:, ::-1, :, :])])
             acts_hat_cg = ComputationGraph(
-                [classifier_convnet.apply(mu_theta)])
+                [classifier_convnet.apply(255 * mu_theta[:, ::-1, :, :])])
 
             # Retrieve activations of interest and compute discriminative
             # regularization reconstruction terms
