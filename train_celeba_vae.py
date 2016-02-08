@@ -376,7 +376,7 @@ def run(discriminative_regularization=True):
 
     # Prepare monitoring
     monitored_quantities_list = []
-    for graph in [cg, bn_cg]:
+    for graph in [bn_cg, cg]:
         cost, kl_term, reconstruction_term = graph.outputs
         cost.name = 'nll_upper_bound'
         avg_kl_term = kl_term.mean(axis=0)
