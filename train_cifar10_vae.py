@@ -1,4 +1,4 @@
-"""Trains a VAE on the SVHN dataset."""
+"""Trains a VAE on the CIFAR10 dataset."""
 import argparse
 import logging
 
@@ -25,7 +25,7 @@ from blocks.serialization import load
 from blocks.utils import find_bricks, shared_floatx
 from theano import tensor
 
-from utils import create_svhn_streams, load_vgg_classifier
+from utils import create_cifar10_streams, load_vgg_classifier
 
 
 def create_model_bricks():
@@ -357,7 +357,7 @@ def run(discriminative_regularization=True):
         every_n_epochs=5)
 
     # Prepare checkpoint
-    save_path = 'svhn_vae_{}regularization.zip'.format(
+    save_path = 'cifar_vae_{}regularization.zip'.format(
         '' if discriminative_regularization else 'no_')
     checkpoint = Checkpoint(save_path, every_n_epochs=5, use_cpickle=True)
 
@@ -371,7 +371,7 @@ def run(discriminative_regularization=True):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser(
-        description="Train a VAE on the SVHN dataset")
+        description="Train a VAE on the CIFAR10 dataset")
     parser.add_argument("--regularize", action='store_true',
                         help="apply discriminative regularization")
     args = parser.parse_args()
