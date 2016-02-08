@@ -2,6 +2,7 @@
 """Plots reconstructions."""
 import argparse
 
+import numpy
 import theano
 from blocks.bricks import Random
 from blocks.graph import ComputationGraph
