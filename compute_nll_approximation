@@ -78,26 +78,16 @@ def main(stream_function, saved_model_path, num_samples, save_path):
 
     nll_approximation_function = theano.function([x], sum_nll, updates=updates)
 
-    s = 0.0
-    e = 0.0
-    for batch, in train_stream.get_epoch_iterator():
-        s += nll_approximation_function(batch)
-        e += len(batch)
-    print(s / e)
-
-    s = 0.0
-    e = 0.0
-    for batch, in valid_stream.get_epoch_iterator():
-        s += nll_approximation_function(batch)
-        e += len(batch)
-    print(s / e)
-
-    s = 0.0
-    e = 0.0
-    for batch, in test_stream.get_epoch_iterator():
-        s += nll_approximation_function(batch)
-        e += len(batch)
-    print(s / e)
+    print('Using {} samples per data point'.format(num_samples))
+    for (name, stream) in (('Training', train_stream),
+                           ('Validation', valid_stream),
+                           ('Test', test_stream)):
+        sum_ = 0.0
+        examples_seen = 0
+        for batch, in stream.get_epoch_iterator():
+            sum_ += nll_approximation_function(batch)
+            examples_seen += len(batch)
+        print('{} NLL approximation: {}'.format(name, sum_ / examples_seen))
 
 
 if __name__ == "__main__":
