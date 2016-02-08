@@ -1,4 +1,5 @@
 """Utility functions."""
+import six
 from blocks.bricks import Rectifier
 from blocks.bricks.conv import (ConvolutionalSequence, Convolutional,
                                 AveragePooling)
@@ -225,8 +226,12 @@ def load_vgg_classifier():
         name='convnet')
     convnet.initialize()
 
-    with open('vgg19_normalized.pkl', 'r') as f:
-        parameter_values = cPickle.load(f)['param values']
+    with open('vgg19_normalized.pkl', 'rb') as f:
+        if six.PY3:
+            data = cPickle.load(f, encoding='latin1')
+        else:
+            data = cPickle.load(f)
+        parameter_values = data['param values']
     conv_weights = parameter_values[::2]
     conv_biases = parameter_values[1::2]
     conv_indices = [0, 2, 5, 7, 10, 12, 14, 16, 19, 21, 23, 25, 28, 30, 32, 34]
