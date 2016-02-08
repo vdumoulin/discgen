@@ -111,6 +111,7 @@ def run():
                                     monitoring_batch_size=500,
                                     include_targets=True)
     main_loop_stream = streams[0]
+    train_monitor_stream = streams[1]
     valid_monitor_stream = streams[2]
 
     cg, bn_dropout_cg = create_training_computation_graphs()
@@ -130,11 +131,18 @@ def run():
     algorithm.add_updates(extra_updates)
 
     # Prepare monitoring
+    cost = bn_dropout_cg.outputs[0]
+    cost.name = 'cost'
+    train_monitoring = DataStreamMonitoring(
+        [cost], train_monitor_stream, prefix="train",
+        before_first_epoch=False, after_epoch=False, after_training=True,
+        updates=extra_updates)
+
     cost, accuracy = cg.outputs
     cost.name = 'cost'
     accuracy.name = 'accuracy'
     monitored_quantities = [cost, accuracy]
-    monitoring = DataStreamMonitoring(
+    valid_monitoring = DataStreamMonitoring(
         monitored_quantities, valid_monitor_stream, prefix="valid",
         before_first_epoch=False, after_epoch=False, every_n_epochs=5)
 
@@ -142,8 +150,8 @@ def run():
     checkpoint = Checkpoint(
         'celeba_classifier.zip', every_n_epochs=5, use_cpickle=True)
 
-    extensions = [Timing(), FinishAfter(after_n_epochs=50), monitoring,
-                  checkpoint, Printing(), ProgressBar()]
+    extensions = [Timing(), FinishAfter(after_n_epochs=50), train_monitoring,
+                  valid_monitoring, checkpoint, Printing(), ProgressBar()]
     main_loop = MainLoop(data_stream=main_loop_stream, algorithm=algorithm,
                          extensions=extensions)
     main_loop.run()
