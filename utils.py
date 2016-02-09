@@ -325,3 +325,28 @@ def load_vgg_classifier():
         b.set_value(b_val)
 
     return convnet
+
+
+def log_sum_exp(A, axis=None):
+    """Numerically stable logsumexp implementation.
+
+    Parameters
+    ----------
+    A : tensor
+        Input to the logsumexp expression.
+    axis : int or sequence of int, optional
+        Axis / axes over which to sum. Defaults to ``None``,
+        meaning all axes.
+
+    """
+    A_max = tensor.max(A, axis=axis, keepdims=True)
+    B = tensor.log(
+        tensor.sum(tensor.exp(A - A_max), axis=axis, keepdims=True)) + A_max
+
+    if axis is None:
+        return B.dimshuffle(())
+    else:
+        if type(axis) is int:
+            axis = [axis]
+        return B.dimshuffle([i for i in range(B.ndim) if
+                             i % B.ndim not in axis])

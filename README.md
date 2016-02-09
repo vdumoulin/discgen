@@ -53,7 +53,7 @@ Make sure you're in the repo's root directory.
 Required for the SVHN and CIFAR10 models.
 
 ``` bash
-python download_vgg19.py
+python scripts/download_vgg19
 ```
 
 ### SVHN
@@ -63,13 +63,13 @@ Make sure you downloaded VGG19.
 Train a VAE *without* discriminative regularization:
 
 ``` bash
-$ THEANORC=theanorc python train_svhn_vae.py
+$ THEANORC=theanorc python experiments/train_svhn_vae.py
 ```
 
 Train a VAE *with* discriminative regularization:
 
 ``` bash
-$ THEANORC=theanorc python train_svhn_vae.py --regularize
+$ THEANORC=theanorc python experiments/train_svhn_vae.py --regularize
 ```
 
 ### CIFAR-10
@@ -79,13 +79,13 @@ Make sure you downloaded VGG19.
 Train a VAE *without* discriminative regularization:
 
 ``` bash
-$ THEANORC=theanorc python train_cifar10_vae.py
+$ THEANORC=theanorc python experiments/train_cifar10_vae.py
 ```
 
 Train a VAE *with* discriminative regularization:
 
 ``` bash
-$ THEANORC=theanorc python train_cifar10_vae.py --regularize
+$ THEANORC=theanorc python experiments/train_cifar10_vae.py --regularize
 ```
 
 ### CelebA
@@ -93,19 +93,19 @@ $ THEANORC=theanorc python train_cifar10_vae.py --regularize
 Train the CelebA classifier:
 
 ``` bash
-$ THEANORC=theanorc python train_celeba_classifier.py
+$ THEANORC=theanorc python experiments/train_celeba_classifier.py
 ```
 
 Train a VAE *without* discriminative regularization:
 
 ``` bash
-$ THEANORC=theanorc python train_celeba_vae.py
+$ THEANORC=theanorc python experiments/train_celeba_vae.py
 ```
 
 Train a VAE *with* discriminative regularization:
 
 ``` bash
-$ THEANORC=theanorc python train_celeba_vae.py --regularize
+$ THEANORC=theanorc python experiments/train_celeba_vae.py --regularize
 ```
 
 ## Evaluating the models
@@ -113,25 +113,25 @@ $ THEANORC=theanorc python train_celeba_vae.py --regularize
 ### Samples
 
 ``` bash
-$ THEANORC=theanorc ./sample [trained_model.zip]
+$ THEANORC=theanorc scripts/sample [trained_model.zip]
 ```
 
 ### Reconstructions
 
 ``` bash
-$ THEANORC=theanorc ./reconstruct [which_dataset] [trained_model.zip]
+$ THEANORC=theanorc scripts/reconstruct [which_dataset] [trained_model.zip]
 ```
 
 ### Interpolations
 
 ``` bash
-$ THEANORC=theanorc ./interpolate [which_dataset] [trained_model.zip]
+$ THEANORC=theanorc scripts/interpolate [which_dataset] [trained_model.zip]
 ```
 
 ### NLL approximation
 
 ``` bash
-$ THEANORC=theanorc ./compute_nll_approximation [which_dataset] [trained_model.zip]
+$ THEANORC=theanorc scripts/compute_nll_approximation [which_dataset] [trained_model.zip]
 ```
 
 *Note: this takes a __long__ time.*
