@@ -19,7 +19,7 @@ from blocks.main_loop import MainLoop
 from blocks.roles import OUTPUT
 from theano import tensor
 
-from utils import create_celeba_streams
+from discgen.utils import create_celeba_streams
 
 
 def create_model_bricks():

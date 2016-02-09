@@ -25,7 +25,7 @@ from blocks.serialization import load
 from blocks.utils import find_bricks, shared_floatx
 from theano import tensor
 
-from utils import create_cifar10_streams, load_vgg_classifier
+from discgen.utils import create_cifar10_streams, load_vgg_classifier
 
 
 def create_model_bricks():

@@ -10,8 +10,8 @@ from blocks.select import Selector
 from blocks.serialization import load
 from theano import tensor
 
-from ..utils import (create_svhn_streams, create_cifar10_streams,
-                     create_celeba_streams, log_sum_exp)
+from discgen.utils import (create_svhn_streams, create_cifar10_streams,
+                           create_celeba_streams, log_sum_exp)
 
 
 def main(stream_function, saved_model_path, num_samples, save_path):

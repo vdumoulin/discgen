@@ -25,7 +25,7 @@ from blocks.serialization import load
 from blocks.utils import find_bricks, shared_floatx
 from theano import tensor
 
-from utils import create_celeba_streams
+from discgen.utils import create_celeba_streams
 
 
 def create_model_bricks():
