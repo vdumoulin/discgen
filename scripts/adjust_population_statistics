@@ -1,0 +1,110 @@
+#!/usr/bin/env ipython
+"""Adjusts batch normalization population statistics on a trained model."""
+import argparse
+
+import numpy
+import theano
+from blocks.algorithms import GradientDescent, Adam
+from blocks.bricks import Random
+from blocks.extensions import FinishAfter, Timing, Printing, ProgressBar
+from blocks.extensions.saveload import Checkpoint
+from blocks.graph import (ComputationGraph, batch_normalization,
+                          apply_batch_normalization,
+                          get_batch_normalization_updates)
+from blocks.main_loop import MainLoop
+from blocks.model import Model
+from blocks.select import Selector
+from blocks.serialization import load
+from theano import tensor
+
+
+def main(saved_model_path, save_path, num_epochs):
+    print('Loading saved model...')
+    training_main_loop = load(saved_model_path)
+    model = Model([training_main_loop.algorithm.cost])
+    selector = Selector(model.top_bricks)
+    encoder_convnet, = selector.select('/encoder_convnet').bricks
+    encoder_mlp, = selector.select('/encoder_mlp').bricks
+    decoder_convnet, = selector.select('/decoder_convnet').bricks
+    decoder_mlp, = selector.select('/decoder_mlp').bricks
+    log_sigma_theta, = [p for p in model.parameters
+                        if p.name == 'log_sigma_theta']
+    log_sigma_theta = log_sigma_theta.dimshuffle('x', 0, 1, 2)
+    random_brick = Random()
+
+    print('Building computation graph...')
+    # Population statistics in the decoder are adjusted by sampling from the
+    # prior, propagating through the decoder and tracking the batch statistics.
+    prior_z = random_brick.theano_rng.normal(size=(500, decoder_mlp.input_dim),
+                                             dtype=theano.config.floatX)
+    mu_theta_from_prior = decoder_convnet.apply(
+        decoder_mlp.apply(prior_z).reshape(
+            (-1,) + decoder_convnet.get_dim('input_')))
+    prior_bn_cg = apply_batch_normalization(
+        ComputationGraph([mu_theta_from_prior]))
+    decoder_pop_updates = get_batch_normalization_updates(prior_bn_cg)
+
+    # Parameters in the encoder are fine-tuned to compensate for the changes
+    # in the decoder caused by adjusting population statistics. The decoder
+    # uses population statistics and its parameters are kept fixed. We train
+    # the encoder using batch statistics and its population statistics are
+    # adjusted to keep track of batch statistics.
+    x = tensor.tensor4('features')
+    pi = numpy.cast[theano.config.floatX](numpy.pi)
+    with batch_normalization(encoder_convnet, encoder_mlp):
+        phi = encoder_mlp.apply(encoder_convnet.apply(x).flatten(ndim=2))
+        nlat = encoder_mlp.output_dim // 2
+        mu_phi = phi[:, :nlat]
+        log_sigma_phi = phi[:, nlat:]
+        epsilon = random_brick.theano_rng.normal(size=mu_phi.shape,
+                                                 dtype=mu_phi.dtype)
+        z = mu_phi + tensor.exp(log_sigma_phi) * epsilon
+        mu_theta = decoder_convnet.apply(
+            decoder_mlp.apply(z).reshape(
+                (-1,) + decoder_convnet.get_dim('input_')))
+        kl_term = 0.5 * (
+            tensor.exp(2 * log_sigma_phi) + mu_phi ** 2 - 2 * log_sigma_phi - 1
+        ).sum(axis=1)
+        reconstruction_term = -0.5 * (
+            tensor.log(2 * pi) + 2 * log_sigma_theta +
+            (x - mu_theta) ** 2 / tensor.exp(2 * log_sigma_theta)
+        ).sum(axis=[1, 2, 3])
+        cost = (kl_term - reconstruction_term).mean()
+    bn_cg = ComputationGraph([cost])
+    encoder_pop_updates = list(
+        set(get_batch_normalization_updates(bn_cg, allow_duplicates=True)))
+    encoder_parameters = (
+        list(Selector(encoder_convnet).get_parameters().values()) +
+        list(Selector(encoder_mlp).get_parameters().values()))
+
+    print('Building main loop...')
+    pop_updates = encoder_pop_updates + decoder_pop_updates
+    decay_rate = 0.05
+    extra_updates = [(p, m * decay_rate + p * (1 - decay_rate))
+                     for p, m in pop_updates]
+    step_rule = Adam()
+    algorithm = GradientDescent(cost=bn_cg.outputs[0],
+                                parameters=encoder_parameters,
+                                step_rule=step_rule)
+    algorithm.add_updates(extra_updates)
+    checkpoint = Checkpoint(save_path, after_training=True, use_cpickle=True)
+    extensions = [Timing(), FinishAfter(after_n_epochs=num_epochs), checkpoint,
+                  Printing(), ProgressBar()]
+    main_loop = MainLoop(data_stream=training_main_loop.data_stream,
+                         algorithm=algorithm, extensions=extensions)
+    main_loop.run()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Adjust batch normalization population statistics on a "
+                    "trained model")
+    parser.add_argument("saved_model_path", type=str,
+                        help="path to the saved model")
+    parser.add_argument("save_path", type=str, default=None,
+                        help="where to save the adjusted model")
+    parser.add_argument("--num-epochs", type=int, default=1,
+                        help="number of epochs")
+    args = parser.parse_args()
+
+    main(args.saved_model_path, args.save_path, args.num_epochs)
