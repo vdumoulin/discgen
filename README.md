@@ -111,6 +111,19 @@ Train a VAE *with* discriminative regularization:
 $ THEANORC=theanorc python experiments/train_celeba_vae.py --regularize
 ```
 
+Fine-tune the trained model:
+
+``` bash
+$ THEANORC=theanorc scripts/adjust_population_statistics [trained_model.zip] [save_path.zip]
+```
+
+e.g.
+
+``` bash
+$ THEANORC=theanorc scripts/adjust_population_statistics \
+  celeba_vae_regularization.zip celeba_vae_regularization_adjusted.zip
+```
+
 ## Evaluating the models
 
 ### Samples
