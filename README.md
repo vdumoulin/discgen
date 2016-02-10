@@ -1,4 +1,7 @@
 # Discriminative Regularization for Generative Models
+
+![Samples banner](example_figures/celeba_vae_regularization_samples_banner.png)
+
 Code for the _Discriminative Regularization for Generative Models_ paper.
 
 ## Requirements
@@ -116,17 +119,41 @@ $ THEANORC=theanorc python experiments/train_celeba_vae.py --regularize
 $ THEANORC=theanorc scripts/sample [trained_model.zip]
 ```
 
+e.g.
+
+``` bash
+$ THEANORC=theanorc scripts/sample celeba_vae_regularization_adjusted.zip
+```
+
+![CelebA samples](example_figures/celeba_vae_regularization_samples.png)
+
 ### Reconstructions
 
 ``` bash
 $ THEANORC=theanorc scripts/reconstruct [which_dataset] [trained_model.zip]
 ```
 
+e.g.
+
+``` bash
+$ THEANORC=theanorc scripts/reconstruct celeba celeba_vae_regularization_adjusted.zip
+```
+
+![CelebA reconstructions](example_figures/celeba_vae_regularization_reconstructions.png)
+
 ### Interpolations
 
 ``` bash
 $ THEANORC=theanorc scripts/interpolate [which_dataset] [trained_model.zip]
 ```
+
+e.g.
+
+``` bash
+$ THEANORC=theanorc scripts/interpolate celeba celeba_vae_regularization_adjusted.zip
+```
+
+![CelebA interpolations](example_figures/celeba_vae_regularization_interpolations.png)
 
 ### NLL approximation
 
