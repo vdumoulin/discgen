@@ -13,7 +13,7 @@ from theano import tensor
 from discgen.utils import plot_image_grid
 
 
-def main(saved_model_path, nrows, ncols, save_path, seed=22349998):
+def main(saved_model_path, nrows, ncols, save_path):
     print('Loading saved model...')
     model = Model(load(saved_model_path).algorithm.cost)
     selector = Selector(model.top_bricks)
@@ -21,9 +21,8 @@ def main(saved_model_path, nrows, ncols, save_path, seed=22349998):
     decoder_convnet, = selector.select('/decoder_convnet').bricks
 
     print('Building computation graph...')
-    z = Random(seed).theano_rng.normal(size=(nrows * ncols,
-                                             decoder_mlp.input_dim),
-                                       dtype=theano.config.floatX)
+    z = Random().theano_rng.normal(size=(nrows * ncols, decoder_mlp.input_dim),
+                                   dtype=theano.config.floatX)
     mu_theta = decoder_convnet.apply(
         decoder_mlp.apply(z).reshape(
             (-1,) + decoder_convnet.get_dim('input_')))
