@@ -2,7 +2,8 @@
 
 ![Samples banner](example_figures/celeba_vae_regularization_samples_banner.png)
 
-Code for the _Discriminative Regularization for Generative Models_ paper.
+Code for the [Discriminative Regularization for Generative Models](http://arxiv.org/abs/1602.03220)
+paper.
 
 ## Requirements
 
@@ -63,33 +64,13 @@ python scripts/download_vgg19
 
 Make sure you downloaded VGG19.
 
-Train a VAE *without* discriminative regularization:
-
-``` bash
-$ THEANORC=theanorc python experiments/train_svhn_vae.py
-```
-
-Train a VAE *with* discriminative regularization:
-
-``` bash
-$ THEANORC=theanorc python experiments/train_svhn_vae.py --regularize
-```
+**The SVHN experiment code will be published very soon.**
 
 ### CIFAR-10
 
 Make sure you downloaded VGG19.
 
-Train a VAE *without* discriminative regularization:
-
-``` bash
-$ THEANORC=theanorc python experiments/train_cifar10_vae.py
-```
-
-Train a VAE *with* discriminative regularization:
-
-``` bash
-$ THEANORC=theanorc python experiments/train_cifar10_vae.py --regularize
-```
+**The CIFAR-10 experiment code will be published very soon.**
 
 ### CelebA
 
