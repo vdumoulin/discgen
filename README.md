@@ -64,13 +64,33 @@ python scripts/download_vgg19
 
 Make sure you downloaded VGG19.
 
-**The SVHN experiment code will be published very soon.**
+Train a VAE *without* discriminative regularization:
+
+``` bash
+$ THEANORC=theanorc python experiments/train_svhn_vae.py
+```
+
+Train a VAE *with* discriminative regularization:
+
+``` bash
+$ THEANORC=theanorc python experiments/train_svhn_vae.py --regularize
+```
 
 ### CIFAR-10
 
 Make sure you downloaded VGG19.
 
-**The CIFAR-10 experiment code will be published very soon.**
+Train a VAE *without* discriminative regularization:
+
+``` bash
+$ THEANORC=theanorc python experiments/train_cifar10_vae.py
+```
+
+Train a VAE *with* discriminative regularization:
+
+``` bash
+$ THEANORC=theanorc python experiments/train_cifar10_vae.py --regularize
+```
 
 ### CelebA
 
