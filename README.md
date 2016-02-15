@@ -43,9 +43,9 @@ $ fuel-download cifar10 --clear
 Download the CelebA dataset:
 
 ``` bash
-$ fuel-download celeba 64
+$ fuel-download celeba
 $ fuel-convert celeba 64
-$ fuel-download celeba 64 --clear
+$ fuel-download celeba --clear
 ```
 
 ## Training the models
@@ -105,6 +105,9 @@ $ THEANORC=theanorc scripts/adjust_population_statistics \
   celeba_vae_regularization.zip celeba_vae_regularization_adjusted.zip
 ```
 
+Note: If you run out of memory in training, a good workaround is to reduce the
+`training_batch_size` and `monitoring_batch_size`.
+
 ## Evaluating the models
 
 ### Samples
@@ -148,6 +151,12 @@ $ THEANORC=theanorc scripts/interpolate celeba celeba_vae_regularization_adjuste
 ```
 
 ![CelebA interpolations](example_figures/celeba_vae_regularization_interpolations.png)
+
+Note: All evaluation scripts use ipython. But this behavior can be overridden by explicitly using python on the command line along with a save path. For example:
+
+```
+THEANORC=theanorc python scripts/sample --save-path sample_no_reg.png celeba_vae_no_regularization.zip
+```
 
 ### NLL approximation
 
