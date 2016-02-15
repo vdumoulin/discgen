@@ -321,7 +321,9 @@ def load_vgg_classifier():
     conv_layers = [convnet.layers[i] for i in conv_indices]
     for layer, W_val, b_val in zip(conv_layers, conv_weights, conv_biases):
         W, b = layer.parameters
-        W.set_value(W_val)
+        # Work around the fact that the network was trained using
+        # cross-correlation
+        W.set_value(W_val[:,:,::-1,::-1])
         b.set_value(b_val)
 
     return convnet
